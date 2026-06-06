@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperar contraseña - Finpy</title>
+
+<link rel="stylesheet" href="static/css/styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+.recuperar-container{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+    padding:20px;
+}
+
+.recuperar-card{
+    background:#fff;
+    width:100%;
+    max-width:450px;
+    padding:40px;
+    border-radius:20px;
+    box-shadow:var(--shadow-hover);
+}
+
+.recuperar-card h2{
+    color:var(--dark);
+    margin-bottom:10px;
+}
+
+.recuperar-card p{
+    color:var(--text-muted);
+    margin-bottom:25px;
+}
+
+.btn-volver{
+    display:block;
+    text-align:center;
+    margin-top:15px;
+    color:var(--primary);
+    font-weight:600;
+}
+</style>
+
+</head>
+<body>
+
+<div class="recuperar-container">
+    <div class="recuperar-card">
+
+        <h2>Recuperar contraseña</h2>
+
+        <p>
+            Ingresa el correo electrónico asociado a tu cuenta.
+        </p>
+
+        <form id="formRecuperar">
+
+            <div class="form-group">
+                <i class="fa-solid fa-envelope"></i>
+                <input
+                    type="email"
+                    id="correo"
+                    placeholder="Correo electrónico"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn-submit">
+                Enviar enlace
+            </button>
+
+        </form>
+
+        <a href="index.html" class="btn-volver">
+            Volver al inicio
+        </a>
+
+    </div>
+</div>
+
+<script>
+document.getElementById("formRecuperar")
+.addEventListener("submit", function(e){
+
+    e.preventDefault();
+
+    const correo = document.getElementById("correo").value.trim();
+
+    if(correo === ""){
+        return;
+    }
+
+    alert("Correo enviado correctamente.");
+
+    window.location.href = "index.html";
+});
+</script>
+
+</body>
+</html>
