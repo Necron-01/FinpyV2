@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alertas — Finpy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .alertas-list { display:flex; flex-direction:column; gap:12px; }
+    .alerta-card { background:var(--bg); border:1.5px solid var(--border); border-radius:14px; padding:18px 20px; display:flex; align-items:center; gap:16px; }
+    .alerta-icon { width:44px; height:44px; border-radius:12px; background:#f59e0b20; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .alerta-body { flex:1; }
+    .alerta-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .alerta-detail { font-size:13px; color:var(--text-muted); }
+    .freq-badge { display:inline-block; padding:2px 10px; border-radius:20px; background:var(--primary)20; color:var(--primary); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+    .btn-del-alerta { background:none; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; padding:7px 10px; border-radius:8px; transition:all .2s; flex-shrink:0; }
+    .btn-del-alerta:hover { border-color:#ef4444; color:#ef4444; background:#fee2e2; }
+    .limite-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .limite-tag { font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:3px 8px; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include '_sidebar.html' %}
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Alertas de presupuesto</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-add" id="btnNuevaAlerta">
+          <i class="fa-solid fa-plus"></i> Nueva alerta
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="card-header">
+          <h3>Alertas activas ({{ alertas | length }})</h3>
+        </div>
+        <div class="card-body">
+          {% if alertas %}
+          <div class="alertas-list">
+            {% for alerta in alertas %}
+            <div class="alerta-card" id="alerta-{{ alerta.id }}">
+              <div class="alerta-icon"><i class="fa-solid fa-bell"></i></div>
+              <div class="alerta-body">
+                <span class="freq-badge">{{ alerta.frecuencia }}</span>
+                <p class="alerta-title">Alerta {{ alerta.frecuencia }}</p>
+                <div class="limite-row">
+                  {% if alerta.limite_diario %}
+                  <span class="limite-tag"><i class="fa-solid fa-sun"></i> Diario: {{ alerta.limite_diario | cop }}</span>
+                  {% endif %}
+                  {% if alerta.limite_semanal %}
+                  <span class="limite-tag"><i class="fa-solid fa-calendar-week"></i> Semanal: {{ alerta.limite_semanal | cop }}</span>
+                  {% endif %}
+                  {% if alerta.limite_mensual %}
+                  <span class="limite-tag"><i class="fa-solid fa-calendar"></i> Mensual: {{ alerta.limite_mensual | cop }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <button class="btn-del-alerta" onclick="eliminarAlerta('{{ alerta.id }}')" title="Eliminar">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text-muted);text-align:center;">
+            <i class="fa-solid fa-bell-slash" style="font-size:3rem;opacity:.25;margin-bottom:16px;display:block;"></i>
+            <p style="font-size:14px;margin-bottom:16px;">No tienes alertas configuradas.<br>Crea una para controlar mejor tus gastos.</p>
+            <button class="btn-add" id="btnNuevaAlerta2"><i class="fa-solid fa-plus"></i> Crear alerta</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA ALERTA -->
+<div class="modal-overlay" id="modalAlerta">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva alerta de presupuesto</h3>
+      <button class="btn-close" id="btnCerrarAlerta"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="alertaForm">
+      <div class="form-group">
+        <i class="fa-solid fa-clock"></i>
+        <select id="alertaFrecuencia" required>
+          <option value="">Selecciona la frecuencia</option>
+          <option value="diaria">Diaria</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensual">Mensual</option>
+          <option value="todas">Todas</option>
+        </select>
+      </div>
+      <div class="form-group" id="limiteDiarioBox" style="display:none;">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="alertaDiario" placeholder="Límite diario (COP)" min="1">
+      </div>
+      <div class="form-group" id="limiteSemanalBox" style="display:none;">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="alertaSemanal" placeholder="Límite semanal (COP)" min="1">
+      </div>
+      <div class="form-group" id="limiteMensualBox" style="display:none;">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="alertaMensual" placeholder="Límite mensual (COP)" min="1">
+      </div>
+      <div id="alertaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear alerta</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+function showToast(msg, type) {
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + (type || 'success');
+  t.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 3000);
+}
+
+function eliminarAlerta(id) {
+  if (!confirm('¿Eliminar esta alerta?')) return;
+  fetch('/api/alertas/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { document.getElementById('alerta-' + id).remove(); showToast('Alerta eliminada', 'success'); }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var modal     = document.getElementById('modalAlerta');
+  var btnAbrir  = document.getElementById('btnNuevaAlerta');
+  var btnAbrir2 = document.getElementById('btnNuevaAlerta2');
+  var btnCerrar = document.getElementById('btnCerrarAlerta');
+
+  function abrirModal()  { modal.classList.add('open'); }
+  function cerrarModal() { modal.classList.remove('open'); }
+
+  btnAbrir.addEventListener('click', abrirModal);
+  btnCerrar.addEventListener('click', cerrarModal);
+  if (btnAbrir2) btnAbrir2.addEventListener('click', abrirModal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) cerrarModal(); });
+
+  document.getElementById('alertaFrecuencia').addEventListener('change', function() {
+    var val = this.value;
+    document.getElementById('limiteDiarioBox').style.display  = (val === 'diaria'  || val === 'todas') ? 'flex' : 'none';
+    document.getElementById('limiteSemanalBox').style.display = (val === 'semanal' || val === 'todas') ? 'flex' : 'none';
+    document.getElementById('limiteMensualBox').style.display = (val === 'mensual' || val === 'todas') ? 'flex' : 'none';
+  });
+
+  document.getElementById('alertaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var errorEl    = document.getElementById('alertaError');
+    var frecuencia = document.getElementById('alertaFrecuencia').value;
+    errorEl.style.display = 'none';
+
+    if (!frecuencia) {
+      errorEl.textContent = 'Selecciona una frecuencia.';
+      errorEl.style.display = 'flex';
+      return;
+    }
+
+    var payload = { frecuencia: frecuencia };
+    var d = document.getElementById('alertaDiario').value;
+    var s = document.getElementById('alertaSemanal').value;
+    var m = document.getElementById('alertaMensual').value;
+    if (d) payload.limite_diario  = parseFloat(d);
+    if (s) payload.limite_semanal = parseFloat(s);
+    if (m) payload.limite_mensual = parseFloat(m);
+
+    fetch('/api/alertas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        cerrarModal();
+        showToast('Alerta creada', 'success');
+        setTimeout(function() { location.reload(); }, 1200);
+      } else {
+        errorEl.textContent = data.error || 'Error al crear la alerta.';
+        errorEl.style.display = 'flex';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transacciones — Finpy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .filter-pill { padding:6px 18px; border-radius:20px; border:1.5px solid var(--border); background:none; color:var(--text-muted); font-size:13px; cursor:pointer; font-family:inherit; transition:all .2s; text-decoration:none; display:inline-block; }
+    .filter-pill.active, .filter-pill:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; }
+    .tx-item-del { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:6px 8px; border-radius:8px; transition:all .2s; flex-shrink:0; }
+    .tx-item-del:hover { background:#fee2e2; color:#ef4444; }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text-muted); text-align:center; }
+    .empty-state i { font-size:3rem; opacity:.25; margin-bottom:12px; display:block; }
+    .empty-state p { font-size:14px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include '_sidebar.html' %}
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Transacciones</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-add" id="btnAgregar">
+          <i class="fa-solid fa-plus"></i> Nueva transacción
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="card-header">
+          <h3>Todas las transacciones ({{ transacciones | length }})</h3>
+          <div class="filter-bar">
+            <a href="?tipo=todos"   class="filter-pill {% if tipo_filtro == 'todos'   %}active{% endif %}">Todos</a>
+            <a href="?tipo=ingreso" class="filter-pill {% if tipo_filtro == 'ingreso' %}active{% endif %}">Ingresos</a>
+            <a href="?tipo=gasto"   class="filter-pill {% if tipo_filtro == 'gasto'   %}active{% endif %}">Gastos</a>
+          </div>
+        </div>
+        <div class="card-body">
+          {% if transacciones %}
+          <div class="transactions-list">
+            {% for tx in transacciones %}
+            <div class="tx-item" id="tx-{{ tx.id }}">
+              {% if tx.tipo == 'ingreso' %}
+              <div class="tx-icon cat-income">
+                <i class="fa-solid {{ tx.categorias.icono if tx.categorias else 'fa-arrow-up' }}"></i>
+              </div>
+              {% else %}
+              <div class="tx-icon cat-{{ tx.categorias.color if tx.categorias else 'white' }}">
+                <i class="fa-solid {{ tx.categorias.icono if tx.categorias else 'fa-tag' }}"></i>
+              </div>
+              {% endif %}
+              <div class="tx-info">
+                <p class="tx-name">{{ tx.descripcion or (tx.categorias.nombre if tx.categorias else 'Sin descripción') }}</p>
+                <p class="tx-cat">{{ tx.categorias.nombre if tx.categorias else ('Ingreso' if tx.tipo == 'ingreso' else 'Sin categoría') }}</p>
+              </div>
+              <div class="tx-right">
+                <p class="tx-amount {{ 'income' if tx.tipo == 'ingreso' else 'expense' }}">
+                  {{ '+' if tx.tipo == 'ingreso' else '-' }}{{ tx.monto | cop }}
+                </p>
+                <p class="tx-date">{{ tx.fecha | fecha_rel }}</p>
+              </div>
+              <button class="tx-item-del" data-id="{{ tx.id }}" title="Eliminar">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fa-solid fa-receipt"></i>
+            <p>No hay transacciones registradas aún.<br>¡Agrega la primera!</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA TRANSACCIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva transacción</h3>
+      <button class="btn-close" id="btnCerrarModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="tipo-toggle">
+      <button class="tipo-btn expense selected" id="tipoGasto">
+        <i class="fa-solid fa-circle-arrow-down"></i> Gasto
+      </button>
+      <button class="tipo-btn income" id="tipoIngreso">
+        <i class="fa-solid fa-circle-arrow-up"></i> Ingreso
+      </button>
+    </div>
+    <form id="txForm">
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="txMonto" placeholder="Monto (COP)" required min="1" step="any">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-tag"></i>
+        <select id="txCategoria">
+          <option value="">Sin categoría</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-pen"></i>
+        <input type="text" id="txDescripcion" placeholder="Descripción (opcional)">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-calendar"></i>
+        <input type="date" id="txFecha" required>
+      </div>
+      <div id="txError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit" id="btnGuardarTx">Guardar transacción</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.tx-item-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.dataset.id;
+      if (!confirm('¿Eliminar esta transacción?')) return;
+      fetch('/api/transacciones/' + id, { method: 'DELETE' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) document.getElementById('tx-' + id).remove();
+        });
+    });
+  });
+});
+</script>
+</body>
+</html>

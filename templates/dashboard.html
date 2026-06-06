@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finpy — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- Datos del servidor disponibles para script.js -->
+<script>
+  var CHART_DATA     = {{ gastos_por_cat | tojson }};
+  var USUARIO_NOMBRE = {{ usuario.nombre | tojson }};
+</script>
+
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="{{ url_for('static', filename='img/Finpy Blanco2.png') }}" alt="Finpy">
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="{{ url_for('dashboard') }}" class="active">
+        <i class="fa-solid fa-house"></i> Inicio
+      </a>
+      <a href="{{ url_for('transacciones_page') }}">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones
+      </a>
+      <a href="{{ url_for('estadisticas_page') }}">
+        <i class="fa-solid fa-chart-line"></i> Estadísticas
+      </a>
+      <a href="{{ url_for('metas_page') }}">
+        <i class="fa-solid fa-bullseye"></i> Metas
+      </a>
+
+      <span class="nav-section-label">Cuenta</span>
+      <a href="{{ url_for('categorias_page') }}">
+        <i class="fa-solid fa-tags"></i> Categorías
+      </a>
+      <a href="{{ url_for('alertas_page') }}">
+        <i class="fa-solid fa-bell"></i> Alertas
+      </a>
+      <a href="{{ url_for('logout') }}">
+        <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ usuario.nombre[0].upper() if usuario.nombre else 'U' }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ usuario.nombre }}</span>
+          <span class="user-role">Plan gratuito</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Hola, {{ usuario.nombre }} 👋</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <div class="notif-wrapper">
+          <button class="btn-icon" title="Notificaciones" id="btnNotif">
+            <i class="fa-solid fa-bell"></i>
+            {% if alerta_presupuesto %}
+            <span class="notif-dot"></span>
+            {% endif %}
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-panel-header">
+              <span>Notificaciones</span>
+              <button class="notif-mark-read">Marcar leídas</button>
+            </div>
+            <div class="notif-list">
+              {% if alerta_presupuesto %}
+              <div class="notif-item">
+                <div class="notif-icon-wrap warn">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="notif-content">
+                  <p class="notif-title">¡{{ alerta_presupuesto.pct }}% del límite mensual!</p>
+                  <p class="notif-desc">Has gastado {{ alerta_presupuesto.gastado | cop }} de {{ alerta_presupuesto.limite | cop }}</p>
+                  <p class="notif-time">Ahora</p>
+                </div>
+              </div>
+              {% endif %}
+              {% for meta in metas %}
+              {% set pct = ((meta.monto_actual / meta.monto_objetivo) * 100) | round | int if meta.monto_objetivo > 0 else 0 %}
+              {% if pct >= 50 %}
+              <div class="notif-item">
+                <div class="notif-icon-wrap success">
+                  <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div class="notif-content">
+                  <p class="notif-title">¡Meta "{{ meta.nombre }}" al {{ pct }}%!</p>
+                  <p class="notif-desc">{{ meta.monto_actual | cop }} de {{ meta.monto_objetivo | cop }}</p>
+                  <p class="notif-time">Actualizado</p>
+                </div>
+              </div>
+              {% endif %}
+              {% endfor %}
+              {% if not alerta_presupuesto and not metas %}
+              <div class="notif-item">
+                <div class="notif-content" style="padding:8px 0;">
+                  <p class="notif-desc">No hay notificaciones nuevas.</p>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <button class="btn-add" id="btnAgregar">
+          <i class="fa-solid fa-plus"></i>
+          Nueva transacción
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content-area">
+
+      <!-- ALERTA DE PRESUPUESTO -->
+      {% if alerta_presupuesto %}
+      <div class="budget-alert" id="budgetAlert">
+        <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+        <span>
+          <strong>Atención:</strong> Has usado el <strong>{{ alerta_presupuesto.pct }}%</strong>
+          de tu límite mensual. Solo quedan <strong>{{ alerta_presupuesto.disponible | cop }}</strong> disponibles.
+        </span>
+        <button class="budget-alert-close" id="btnCerrarAlerta">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- STREAK BANNER -->
+      <div class="streak-banner">
+        <div class="streak-left">
+          <span class="streak-emoji">🔥</span>
+          <div>
+            <strong>¡Sigue así!</strong>
+            <span>Capi está orgulloso de tu disciplina financiera</span>
+          </div>
+        </div>
+        <div class="streak-right">
+          <div class="streak-count">{{ transacciones | length }}</div>
+          <small>transacciones</small>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon teal">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <div class="kpi-info">
+            <p class="kpi-label">Balance total</p>
+            <p class="kpi-value">{{ balance | cop }}</p>
+            <p class="kpi-trend {{ 'up' if balance >= 0 else 'down' }}">
+              <i class="fa-solid {{ 'fa-arrow-trend-up' if balance >= 0 else 'fa-arrow-trend-down' }}"></i>
+              {{ 'Positivo' if balance >= 0 else 'Negativo' }}
+            </p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <i class="fa-solid fa-circle-arrow-up"></i>
+          </div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total ingresos</p>
+            <p class="kpi-value">{{ total_ingresos | cop }}</p>
+            <p class="kpi-trend up">
+              <i class="fa-solid fa-arrow-trend-up"></i> Acumulado
+            </p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">
+            <i class="fa-solid fa-circle-arrow-down"></i>
+          </div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total gastos</p>
+            <p class="kpi-value">{{ total_gastos | cop }}</p>
+            {% if alerta_presupuesto %}
+            <p class="kpi-trend down">
+              <i class="fa-solid fa-arrow-trend-down"></i> {{ alerta_presupuesto.pct }}% del límite
+            </p>
+            {% else %}
+            <p class="kpi-trend up"><i class="fa-solid fa-check"></i> Dentro del límite</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID -->
+      <div class="dashboard-grid">
+
+        <!-- CHART -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Gastos por categoría</h3>
+            <div class="chart-filters">
+              <button class="filter-btn active">Semana</button>
+              <button class="filter-btn">Mes</button>
+              <button class="filter-btn">Año</button>
+            </div>
+          </div>
+          <div class="card-body">
+            {% if gastos_por_cat %}
+            <div class="chart-container">
+              <canvas id="chartGastos"></canvas>
+            </div>
+            {% else %}
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-muted);">
+              <i class="fa-solid fa-chart-pie" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i>
+              <p style="font-size:13px;">Sin gastos registrados aún</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- TRANSACCIONES RECIENTES -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Transacciones recientes</h3>
+            <button class="btn-add" id="btnAgregar2" style="font-size:11px;padding:5px 10px;">+ Nueva</button>
+          </div>
+          <div style="padding: 0 22px 10px;">
+            <div class="cat-chips">
+              {% for cat in categorias[:5] %}
+              <span class="cat-chip {{ cat.color }}">
+                <i class="fa-solid {{ cat.icono }}"></i> {{ cat.nombre }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="transactions-list">
+              {% for tx in transacciones %}
+              <div class="tx-item">
+                {% if tx.tipo == 'ingreso' %}
+                <div class="tx-icon cat-income">
+                  <i class="fa-solid {{ tx.categorias.icono if tx.categorias else 'fa-arrow-up' }}"></i>
+                </div>
+                {% else %}
+                <div class="tx-icon cat-{{ tx.categorias.color if tx.categorias else 'white' }}">
+                  <i class="fa-solid {{ tx.categorias.icono if tx.categorias else 'fa-tag' }}"></i>
+                </div>
+                {% endif %}
+                <div class="tx-info">
+                  <p class="tx-name">{{ tx.descripcion or (tx.categorias.nombre if tx.categorias else 'Sin descripción') }}</p>
+                  <p class="tx-cat">{{ tx.categorias.nombre if tx.categorias else ('Ingreso' if tx.tipo == 'ingreso' else 'Sin categoría') }}</p>
+                </div>
+                <div class="tx-right">
+                  <p class="tx-amount {{ 'income' if tx.tipo == 'ingreso' else 'expense' }}">
+                    {{ '+' if tx.tipo == 'ingreso' else '-' }}{{ tx.monto | cop }}
+                  </p>
+                  <p class="tx-date">{{ tx.fecha | fecha_rel }}</p>
+                </div>
+              </div>
+              {% else %}
+              <div style="padding:24px 0;text-align:center;color:var(--text-muted);">
+                <i class="fa-solid fa-receipt" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                <p style="font-size:13px;">Aún no hay transacciones.<br>¡Agrega la primera!</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM GRID -->
+      <div class="bottom-grid">
+
+        <!-- METAS -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Mis metas</h3>
+            <button id="btnNuevaMeta" style="font-size:12px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;">+ Agregar</button>
+          </div>
+          <div class="card-body">
+            <div class="goals-list">
+              {% set colores = ['', 'green', 'purple'] %}
+              {% for meta in metas %}
+              {% set pct = ((meta.monto_actual / meta.monto_objetivo) * 100) | round | int if meta.monto_objetivo > 0 else 0 %}
+              {% set color_class = colores[loop.index0 % 3] %}
+              <div class="goal-item">
+                <div class="goal-top">
+                  <div class="goal-info">
+                    <div class="goal-ico"><i class="fa-solid {{ meta.icono }}"></i></div>
+                    <div>
+                      <p class="goal-name">{{ meta.nombre }}</p>
+                      <p class="goal-amount">{{ meta.monto_actual | cop }} / {{ meta.monto_objetivo | cop }}</p>
+                    </div>
+                  </div>
+                  <span class="goal-pct">{{ pct }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill {{ color_class }}" style="width:{{ [pct, 100] | min }}%"></div>
+                </div>
+              </div>
+              {% else %}
+              <div style="padding:24px 0;text-align:center;color:var(--text-muted);">
+                <i class="fa-solid fa-bullseye" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                <p style="font-size:13px;">Sin metas aún. ¡Define la primera!</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- CAPI ASSISTANT -->
+        <div class="card capi-card">
+          <div class="card-header">
+            <h3>Consejo de Capi</h3>
+            <span class="badge-capi">IA</span>
+          </div>
+          <div class="capi-body">
+            <img src="{{ url_for('static', filename='img/Finpy IA.png') }}" alt="Capi" class="capi-img">
+            <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+              {% if alerta_presupuesto %}
+              <div class="capi-bubble">
+                <p>⚠️ Llevas un <strong>{{ alerta_presupuesto.pct }}%</strong> de tu límite mensual. Quedan {{ alerta_presupuesto.disponible | cop }} — úsalos con calma.</p>
+              </div>
+              {% endif %}
+              <div class="capi-bubble" id="capiBubble" style="transition:opacity .3s ease;">
+                <p id="capiTexto"></p>
+              </div>
+              <button id="btnOtroConsejo" style="align-self:flex-start;background:none;border:1.5px solid var(--border);color:var(--text-muted);padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;">
+                <i class="fa-solid fa-rotate-right"></i> Otro consejo
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA TRANSACCIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva transacción</h3>
+      <button class="btn-close" id="btnCerrarModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="tipo-toggle">
+      <button class="tipo-btn expense selected" id="tipoGasto">
+        <i class="fa-solid fa-circle-arrow-down"></i> Gasto
+      </button>
+      <button class="tipo-btn income" id="tipoIngreso">
+        <i class="fa-solid fa-circle-arrow-up"></i> Ingreso
+      </button>
+    </div>
+
+    <form id="txForm">
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="txMonto" placeholder="Monto (COP)" required min="1" step="any">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-tag"></i>
+        <select id="txCategoria">
+          <option value="">Sin categoría</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-pen"></i>
+        <input type="text" id="txDescripcion" placeholder="Descripción (opcional)">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-calendar"></i>
+        <input type="date" id="txFecha" required>
+      </div>
+      <div id="txError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit" id="btnGuardarTx">Guardar transacción</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL NUEVA META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva meta de ahorro</h3>
+      <button class="btn-close" id="btnCerrarMeta"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="metaForm">
+      <div class="form-group">
+        <i class="fa-solid fa-bullseye"></i>
+        <input type="text" id="metaNombre" placeholder="Nombre de la meta" required>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="metaObjetivo" placeholder="Monto objetivo (COP)" required min="1">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="metaActual" placeholder="Monto ya ahorrado (opcional)" min="0">
+      </div>
+      <div id="metaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear meta</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+(function() {
+  var TIPS = [
+    "Regla 50/30/20: destina el 50% de tus ingresos a necesidades, 30% a gustos y 20% a ahorro. Es el punto de partida para organizar tu dinero. 📊",
+    "Antes de comprar algo, espera 24 horas. Si al día siguiente aún lo quieres, probablemente lo necesitas. Así evitas el gasto impulsivo. ⏳",
+    "Construye un fondo de emergencia con al menos 3 meses de gastos fijos antes de pensar en cualquier otra inversión. 🛡️",
+    "Anota cada gasto, por pequeño que sea. Un café diario puede ser más de $60.000 al mes — registrar todo te da claridad real. ☕",
+    "Automatiza tu ahorro: en cuanto recibas ingresos, mueve un porcentaje fijo a una cuenta separada antes de gastar. Lo que no ves, no lo gastas. 🏦",
+    "Revisa tus suscripciones cada mes. Servicios de streaming, apps o membresías olvidadas pueden sumar una cantidad sorprendente. 📱",
+    "Distingue entre necesidad y deseo. ¿Lo necesitas para vivir o trabajar? Necesidad. ¿Solo lo quieres? Deseo. Prioriza siempre las necesidades. 🧠",
+    "Paga primero las deudas de mayor interés. Las tarjetas de crédito son las más costosas — liquidarlas primero te ahorra mucho dinero. 💳",
+    "Define metas de ahorro específicas: un viaje, una laptop, un fondo de emergencia. Tener un objetivo claro te motiva a ahorrar. 🎯",
+    "Evita comparar tus finanzas con las de otros. Cada persona tiene ingresos y gastos distintos. Compite solo contigo mismo. 💪",
+    "Si puedes, genera más de una fuente de ingresos. Un pequeño freelance o emprendimiento puede hacer una gran diferencia al final del mes. 🚀",
+    "Revisa tus finanzas al menos una vez por semana. Unos minutos son suficientes para saber si estás en el camino correcto. 📅",
+    "El mejor momento para empezar a ahorrar fue ayer. El segundo mejor momento es hoy. No esperes tener 'más dinero' para comenzar. 💡",
+    "Usa el método de sobres: asigna un límite a cada categoría de gasto. Cuando se acaba el límite, no hay más para esa categoría. ✉️",
+    "Antes de una compra grande, investiga y compara precios. Esperar una semana puede ahorrarte entre el 10% y el 30% del valor. 🔍",
+    "Cocinar en casa en lugar de comer fuera puede reducir tu gasto en comida hasta un 60%. Y generalmente es más saludable. 🍳",
+    "Guarda el 1% de todo lo que ganas. Si hoy no puedes ahorrar el 20%, empieza con el 1%. El hábito es lo que importa. 🌱",
+  ];
+
+  var idx = Math.floor(Math.random() * TIPS.length);
+  var textoEl = document.getElementById('capiTexto');
+  var bubble  = document.getElementById('capiBubble');
+  var btnOtro = document.getElementById('btnOtroConsejo');
+
+  function mostrarTip() {
+    if (!textoEl || !bubble) return;
+    bubble.style.opacity = '0';
+    setTimeout(function() {
+      textoEl.textContent = TIPS[idx % TIPS.length];
+      bubble.style.opacity = '1';
+    }, 200);
+  }
+
+  mostrarTip();
+
+  if (btnOtro) {
+    btnOtro.addEventListener('click', function() {
+      idx = (idx + 1) % TIPS.length;
+      mostrarTip();
+    });
+    btnOtro.addEventListener('mouseenter', function() {
+      btnOtro.style.borderColor = 'var(--primary)';
+      btnOtro.style.color = 'var(--primary)';
+    });
+    btnOtro.addEventListener('mouseleave', function() {
+      btnOtro.style.borderColor = 'var(--border)';
+      btnOtro.style.color = 'var(--text-muted)';
+    });
+  }
+})();
+</script>
+</body>
+</html>

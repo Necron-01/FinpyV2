@@ -1,0 +1,39 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="{{ url_for('static', filename='img/Finpy Blanco2.png') }}" alt="Finpy">
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Principal</span>
+    <a href="{{ url_for('dashboard') }}"{% if active_page == 'inicio' %} class="active"{% endif %}>
+      <i class="fa-solid fa-house"></i> Inicio
+    </a>
+    <a href="{{ url_for('transacciones_page') }}"{% if active_page == 'transacciones' %} class="active"{% endif %}>
+      <i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones
+    </a>
+    <a href="{{ url_for('estadisticas_page') }}"{% if active_page == 'estadisticas' %} class="active"{% endif %}>
+      <i class="fa-solid fa-chart-line"></i> Estadísticas
+    </a>
+    <a href="{{ url_for('metas_page') }}"{% if active_page == 'metas' %} class="active"{% endif %}>
+      <i class="fa-solid fa-bullseye"></i> Metas
+    </a>
+    <span class="nav-section-label">Cuenta</span>
+    <a href="{{ url_for('categorias_page') }}"{% if active_page == 'categorias' %} class="active"{% endif %}>
+      <i class="fa-solid fa-tags"></i> Categorías
+    </a>
+    <a href="{{ url_for('alertas_page') }}"{% if active_page == 'alertas' %} class="active"{% endif %}>
+      <i class="fa-solid fa-bell"></i> Alertas
+    </a>
+    <a href="{{ url_for('logout') }}">
+      <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ usuario.nombre[0].upper() if usuario.nombre else 'U' }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ usuario.nombre }}</span>
+        <span class="user-role">Plan gratuito</span>
+      </div>
+    </div>
+  </div>
+</aside>

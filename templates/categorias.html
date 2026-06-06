@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categorías — Finpy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .cat-section-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin:24px 0 12px; }
+    .cat-section-title:first-child { margin-top:0; }
+    .cat-grid { display:flex; flex-wrap:wrap; gap:10px; }
+    .cat-card { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--bg); border:1.5px solid var(--border); border-radius:12px; font-size:13px; font-weight:500; color:var(--text); }
+    .cat-ico { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .cat-ico.teal   { background:#07C7B720; color:#07C7B7; }
+    .cat-ico.blue   { background:#3b82f620; color:#3b82f6; }
+    .cat-ico.purple { background:#7C6CF620; color:#7C6CF6; }
+    .cat-ico.green  { background:#22c55e20; color:#22c55e; }
+    .cat-ico.red    { background:#ef444420; color:#ef4444; }
+    .cat-ico.white  { background:#94a3b820; color:#94a3b8; }
+    .cat-ico.muted  { background:#64748b20; color:#64748b; }
+    .btn-del-cat { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:3px 5px; border-radius:6px; font-size:12px; transition:all .15s; line-height:1; }
+    .btn-del-cat:hover { background:#fee2e2; color:#ef4444; }
+    .cat-predefinida { opacity:.7; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include '_sidebar.html' %}
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Categorías</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-add" id="btnNuevaCat">
+          <i class="fa-solid fa-plus"></i> Nueva categoría
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="card-body">
+
+          <p class="cat-section-title">Predefinidas</p>
+          <div class="cat-grid">
+            {% for cat in categorias if cat.es_predefinida %}
+            <div class="cat-card cat-predefinida">
+              <div class="cat-ico {{ cat.color }}"><i class="fa-solid {{ cat.icono }}"></i></div>
+              <span>{{ cat.nombre }}</span>
+            </div>
+            {% else %}
+            <p style="color:var(--text-muted);font-size:13px;">No hay categorías predefinidas.</p>
+            {% endfor %}
+          </div>
+
+          <p class="cat-section-title">Mis categorías</p>
+          <div class="cat-grid" id="misCategoriasGrid">
+            {% for cat in categorias if not cat.es_predefinida %}
+            <div class="cat-card" id="cat-{{ cat.id }}">
+              <div class="cat-ico {{ cat.color }}"><i class="fa-solid {{ cat.icono }}"></i></div>
+              <span>{{ cat.nombre }}</span>
+              <button class="btn-del-cat" onclick="eliminarCategoria('{{ cat.id }}')" title="Eliminar">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            {% else %}
+            <p style="color:var(--text-muted);font-size:13px;">Aún no tienes categorías personalizadas.</p>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA CATEGORÍA -->
+<div class="modal-overlay" id="modalCat">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva categoría</h3>
+      <button class="btn-close" id="btnCerrarCat"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="catForm">
+      <div class="form-group">
+        <i class="fa-solid fa-tag"></i>
+        <input type="text" id="catNombre" placeholder="Nombre de la categoría" required>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-icons"></i>
+        <select id="catIcono">
+          <option value="fa-tag">Etiqueta</option>
+          <option value="fa-utensils">Comida</option>
+          <option value="fa-car">Transporte</option>
+          <option value="fa-graduation-cap">Educación</option>
+          <option value="fa-gamepad">Ocio</option>
+          <option value="fa-plane">Viajes</option>
+          <option value="fa-heart-pulse">Salud</option>
+          <option value="fa-shirt">Ropa</option>
+          <option value="fa-house">Hogar</option>
+          <option value="fa-mobile-screen">Tecnología</option>
+          <option value="fa-dumbbell">Deporte</option>
+          <option value="fa-book">Libros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-palette"></i>
+        <select id="catColor">
+          <option value="teal">Verde agua</option>
+          <option value="blue">Azul</option>
+          <option value="purple">Morado</option>
+          <option value="green">Verde</option>
+          <option value="red">Rojo</option>
+          <option value="white">Gris</option>
+        </select>
+      </div>
+      <div id="catError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear categoría</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+function showToast(msg, type) {
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + (type || 'success');
+  t.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 3000);
+}
+
+function eliminarCategoria(id) {
+  if (!confirm('¿Eliminar esta categoría?')) return;
+  fetch('/api/categorias/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { document.getElementById('cat-' + id).remove(); showToast('Categoría eliminada', 'success'); }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var modal   = document.getElementById('modalCat');
+  var btnAbrir  = document.getElementById('btnNuevaCat');
+  var btnCerrar = document.getElementById('btnCerrarCat');
+
+  btnAbrir.addEventListener('click',  function() { modal.classList.add('open'); });
+  btnCerrar.addEventListener('click', function() { modal.classList.remove('open'); });
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.classList.remove('open'); });
+
+  document.getElementById('catForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var errorEl = document.getElementById('catError');
+    errorEl.style.display = 'none';
+    fetch('/api/categorias', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: document.getElementById('catNombre').value,
+        icono:  document.getElementById('catIcono').value,
+        color:  document.getElementById('catColor').value
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        modal.classList.remove('open');
+        showToast('Categoría creada', 'success');
+        setTimeout(function() { location.reload(); }, 1200);
+      } else {
+        errorEl.textContent = d.error || 'Error al crear la categoría.';
+        errorEl.style.display = 'flex';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

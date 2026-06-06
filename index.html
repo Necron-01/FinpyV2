@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finpy — Finanzas Inteligentes para Estudiantes</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <header>
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="static/img/Finpy Blanco2.png" alt="Finpy">
+      </div>
+      <ul class="nav-links">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#beneficios">Beneficios</a></li>
+        <li><a href="#acceso" class="btn-nav">Comenzar gratis</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero" id="inicio">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-badge"><i class="fa-solid fa-bolt"></i> Finanzas inteligentes</div>
+        <h1>Controla tu dinero,<br><span>alcanza tus metas</span></h1>
+        <p>Registra gastos e ingresos, define límites por categoría y recibe consejos personalizados de Capi, tu asistente financiero.</p>
+        <div class="hero-buttons">
+          <a href="#acceso" class="btn-primary"><i class="fa-solid fa-rocket"></i> Crear cuenta gratis</a>
+          <a href="#beneficios" class="btn-outline"><i class="fa-solid fa-play"></i> Ver más</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="static/img/Finpy IA.png" alt="Capi — Asistente Finpy">
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="beneficios">
+    <div class="section-header">
+      <span class="section-label">¿Por qué Finpy?</span>
+      <h2>Todo lo que necesitas para manejar tu dinero</h2>
+      <p>Diseñado especialmente para estudiantes universitarios que quieren tomar el control de sus finanzas.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-wallet"></i></div><h3>Control de gastos e ingresos</h3><p>Registra cada movimiento de dinero, categorízalo y lleva un historial claro de tus finanzas diarias.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-chart-pie"></i></div><h3>Estadísticas detalladas</h3><p>Visualiza tus gastos por categoría, por mes o por semana con gráficas interactivas y fáciles de entender.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-bell"></i></div><h3>Alertas inteligentes</h3><p>Define límites de gasto y recibe notificaciones cuando estés por superarlos antes de que sea tarde.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-tags"></i></div><h3>Categorías personalizadas</h3><p>Usa las categorías predefinidas o crea las tuyas propias. Organiza tus gastos como mejor te funcione.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-bullseye"></i></div><h3>Metas de ahorro</h3><p>Establece objetivos financieros como un viaje o una laptop y haz seguimiento de tu progreso mes a mes.</p></div>
+      <div class="feature-card"><div class="feature-icon"><i class="fa-solid fa-robot"></i></div><h3>Asistente IA — Capi</h3><p>Recibe recomendaciones personalizadas basadas en tus hábitos de gasto y consejos para ahorrar más.</p></div>
+    </div>
+  </section>
+
+  <section class="auth-section" id="acceso">
+    <div class="auth-wrapper">
+
+      <div class="auth-left">
+        <img src="static/img/Finpy Blanco2.png" alt="Finpy">
+        <h2>Empieza hoy,<br>sin costo alguno</h2>
+        <p>Únete y toma el control de tus finanzas en menos de 2 minutos.</p>
+        <div class="auth-features">
+          <div class="auth-feature"><i class="fa-solid fa-check"></i> Registro de gastos e ingresos</div>
+          <div class="auth-feature"><i class="fa-solid fa-check"></i> Categorías y metas personalizadas</div>
+          <div class="auth-feature"><i class="fa-solid fa-check"></i> Alertas y consejos de Capi</div>
+          <div class="auth-feature"><i class="fa-solid fa-check"></i> Gráficas y estadísticas mensuales</div>
+        </div>
+      </div>
+
+      <div class="auth-right">
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="tabRegistro">Crear cuenta</button>
+          <button class="tab-btn" id="tabLogin">Iniciar sesión</button>
+        </div>
+
+        <!-- REGISTRO -->
+        <div class="auth-form active" id="formRegistro">
+          <h3>Crea tu cuenta</h3>
+          <p class="form-subtitle">Es gratis y solo toma un momento</p>
+          <div class="form-error" id="errorRegistro" style="display:none;"></div>
+          <form id="registroForm">
+            <div class="form-row">
+              <div class="form-group"><i class="fa-solid fa-user"></i><input type="text" name="nombre" placeholder="Nombre" required></div>
+              <div class="form-group"><i class="fa-solid fa-user"></i><input type="text" name="apellido" placeholder="Apellido"></div>
+            </div>
+            <div class="form-group"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="Correo electrónico" required></div>
+            <div class="form-group"><i class="fa-solid fa-lock"></i><input type="password" name="password" placeholder="Contraseña (mín. 6 caracteres)" required></div>
+            <label class="field-label" style="margin-bottom:8px;">Fuente de ingresos <span style="font-weight:400;color:var(--text-muted);">(puedes elegir varias)</span></label>
+            <div class="fuente-chips">
+              <label class="cat-chip teal fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Trabajo formal" style="display:none;"><i class="fa-solid fa-briefcase"></i> Trabajo formal</label>
+              <label class="cat-chip blue fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Trabajo informal" style="display:none;"><i class="fa-solid fa-handshake"></i> Trabajo informal</label>
+              <label class="cat-chip purple fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Freelance / Independiente" style="display:none;"><i class="fa-solid fa-laptop-code"></i> Freelance</label>
+              <label class="cat-chip green fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Ayuda familiar / Mesada" style="display:none;"><i class="fa-solid fa-house"></i> Ayuda familiar</label>
+              <label class="cat-chip blue fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Beca académica" style="display:none;"><i class="fa-solid fa-graduation-cap"></i> Beca académica</label>
+              <label class="cat-chip purple fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Beca deportiva" style="display:none;"><i class="fa-solid fa-trophy"></i> Beca deportiva</label>
+              <label class="cat-chip teal fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Emprendimiento propio" style="display:none;"><i class="fa-solid fa-store"></i> Emprendimiento</label>
+              <label class="cat-chip white fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Trabajo part-time" style="display:none;"><i class="fa-solid fa-clock"></i> Part-time</label>
+              <label class="cat-chip white fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Inversiones / Rentas" style="display:none;"><i class="fa-solid fa-chart-line"></i> Inversiones</label>
+              <label class="cat-chip muted fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Sin ingresos por ahora" style="display:none;"><i class="fa-solid fa-circle-xmark"></i> Sin ingresos</label>
+              <label class="cat-chip muted fuente-chip"><input type="checkbox" name="fuente_ingresos" value="Prefiero no decirlo" style="display:none;"><i class="fa-solid fa-eye-slash"></i> Prefiero no decir</label>
+            </div>
+            <button type="submit" class="btn-submit">Crear cuenta gratis</button>
+          </form>
+        </div>
+
+        <!-- LOGIN -->
+        <div class="auth-form" id="formLogin">
+          <h3>Bienvenido de nuevo</h3>
+          <p class="form-subtitle">Ingresa a tu cuenta para continuar</p>
+          <div class="form-error" id="errorLogin" style="display:none;"></div>
+          <form id="loginForm">
+            <div class="form-group"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="Correo electrónico" required></div>
+            <div class="form-group"><i class="fa-solid fa-lock"></i><input type="password" name="password" placeholder="Contraseña" required></div>
+            <div class="remember-row"><label><input type="checkbox" name="recordar"> Mantener sesión</label><a href="#">¿Olvidaste tu contraseña?</a></div>
+            <button type="submit" class="btn-submit">Ingresar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <img src="static/img/Finpy Blanco2.png" alt="Finpy">
+    <p>© 2026 Finpy — Finanzas Inteligentes para Estudiantes</p>
+  </footer>
+
+<script src="static/js/storage.js"></script>
+  <script src="static/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (FINPY.getCurrentUser()) window.location.replace('dashboard.html');
+    });
+  </script>
+</body>
+</html>

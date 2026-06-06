@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finpy — Dashboard</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="static/img/Finpy Blanco2.png" alt="Finpy"></div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="dashboard.html" class="active"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="transacciones.html"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones</a>
+      <a href="estadisticas.html"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+      <a href="metas.html"><i class="fa-solid fa-bullseye"></i> Metas</a>
+      <span class="nav-section-label">Cuenta</span>
+      <a href="categorias.html"><i class="fa-solid fa-tags"></i> Categorías</a>
+      <a href="alertas.html"><i class="fa-solid fa-bell"></i> Alertas</a>
+      <a href="#" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar sidebar-user-avatar">?</div>
+        <div class="user-info">
+          <span class="user-name sidebar-user-name">—</span>
+          <span class="user-role">Plan gratuito</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Hola, <span id="greetingName">—</span> 👋</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <div class="notif-wrapper">
+          <button class="btn-icon" title="Notificaciones" id="btnNotif">
+            <i class="fa-solid fa-bell"></i>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-panel-header">
+              <span>Notificaciones</span>
+              <button class="notif-mark-read">Marcar leídas</button>
+            </div>
+            <div class="notif-list" id="notifList">
+              <div class="notif-item"><div class="notif-content" style="padding:8px 0;"><p class="notif-desc">No hay notificaciones nuevas.</p></div></div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-add" id="btnAgregar"><i class="fa-solid fa-plus"></i> Nueva transacción</button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <div class="streak-banner">
+        <div class="streak-left">
+          <span class="streak-emoji">🔥</span>
+          <div><strong>¡Sigue así!</strong><span>Capi está orgulloso de tu disciplina financiera</span></div>
+        </div>
+        <div class="streak-right">
+          <div class="streak-count" id="streakCount">0</div>
+          <small>transacciones</small>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon teal"><i class="fa-solid fa-wallet"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Balance total</p>
+            <p class="kpi-value" id="kpiBalance">$0</p>
+            <p class="kpi-trend up" id="kpiBalanceTrend"><i class="fa-solid fa-arrow-trend-up"></i> Positivo</p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="fa-solid fa-circle-arrow-up"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total ingresos</p>
+            <p class="kpi-value" id="kpiIngresos">$0</p>
+            <p class="kpi-trend up"><i class="fa-solid fa-arrow-trend-up"></i> Acumulado</p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="fa-solid fa-circle-arrow-down"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total gastos</p>
+            <p class="kpi-value" id="kpiGastos">$0</p>
+            <p class="kpi-trend up"><i class="fa-solid fa-check"></i> Dentro del límite</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID -->
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Gastos por categoría</h3>
+            <div class="chart-filters">
+              <button class="filter-btn active">Todo</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="chartWrap">
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-muted);">
+                <i class="fa-solid fa-chart-pie" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i>
+                <p style="font-size:13px;">Sin gastos registrados aún</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Transacciones recientes</h3>
+            <button class="btn-add" id="btnAgregar2" style="font-size:11px;padding:5px 10px;">+ Nueva</button>
+          </div>
+          <div class="card-body">
+            <div class="transactions-list" id="txListDash">
+              <div style="padding:24px 0;text-align:center;color:var(--text-muted);">
+                <i class="fa-solid fa-receipt" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                <p style="font-size:13px;">Aún no hay transacciones.<br>¡Agrega la primera!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM GRID -->
+      <div class="bottom-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Mis metas</h3>
+            <button id="btnNuevaMeta" style="font-size:12px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;">+ Agregar</button>
+          </div>
+          <div class="card-body">
+            <div class="goals-list" id="goalsListDash">
+              <div style="padding:24px 0;text-align:center;color:var(--text-muted);">
+                <i class="fa-solid fa-bullseye" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i>
+                <p style="font-size:13px;">Sin metas aún. ¡Define la primera!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card capi-card">
+          <div class="card-header"><h3>Consejo de Capi</h3><span class="badge-capi">IA</span></div>
+          <div class="capi-body">
+            <img src="static/img/Finpy IA.png" alt="Capi" class="capi-img">
+            <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+              <div class="capi-bubble" id="capiBubble" style="transition:opacity .3s;"><p id="capiTexto"></p></div>
+              <button id="btnOtroConsejo" style="align-self:flex-start;background:none;border:1.5px solid var(--border);color:var(--text-muted);padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;">
+                <i class="fa-solid fa-rotate-right"></i> Otro consejo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TRANSACCIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva transacción</h3><button class="btn-close" id="btnCerrarModal"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="tipo-toggle">
+      <button class="tipo-btn expense selected" id="tipoGasto"><i class="fa-solid fa-circle-arrow-down"></i> Gasto</button>
+      <button class="tipo-btn income" id="tipoIngreso"><i class="fa-solid fa-circle-arrow-up"></i> Ingreso</button>
+    </div>
+    <form id="txForm">
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="txMonto" placeholder="Monto (COP)" required min="1" step="any"></div>
+      <div class="form-group"><i class="fa-solid fa-tag"></i><select id="txCategoria"><option value="">Sin categoría</option></select></div>
+      <div class="form-group"><i class="fa-solid fa-pen"></i><input type="text" id="txDescripcion" placeholder="Descripción (opcional)"></div>
+      <div class="form-group"><i class="fa-solid fa-calendar"></i><input type="date" id="txFecha" required></div>
+      <div id="txError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit" id="btnGuardarTx">Guardar transacción</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva meta de ahorro</h3><button class="btn-close" id="btnCerrarMeta"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="metaForm">
+      <div class="form-group"><i class="fa-solid fa-bullseye"></i><input type="text" id="metaNombre" placeholder="Nombre de la meta" required></div>
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="metaObjetivo" placeholder="Monto objetivo (COP)" required min="1"></div>
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="metaActual" placeholder="Monto ya ahorrado (opcional)" min="0"></div>
+      <div id="metaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear meta</button>
+    </form>
+  </div>
+</div>
+
+<script src="static/js/storage.js"></script>
+<script src="static/js/app.js"></script>
+<script>
+if (!FINPY.getCurrentUser()) {
+  window.location.replace('index.html');
+} else {
+
+var dashChart = null;
+function renderPage() {
+  if (!FINPY.requireAuth()) return;
+  var user  = FINPY.getCurrentUser();
+  var stats = FINPY.calcStats(user.id);
+  var txs   = FINPY.getTransactions(user.id);
+  var goals = FINPY.getGoals(user.id);
+  var cats  = FINPY.getCategories(user.id);
+
+  // Greeting
+  document.getElementById('greetingName').textContent = user.nombre;
+
+  // Streak
+  document.getElementById('streakCount').textContent = txs.length;
+
+  // KPIs
+  document.getElementById('kpiBalance').textContent  = formatCOP(stats.balance);
+  document.getElementById('kpiIngresos').textContent = formatCOP(stats.total_ingresos);
+  document.getElementById('kpiGastos').textContent   = formatCOP(stats.total_gastos);
+  var trendEl = document.getElementById('kpiBalanceTrend');
+  if (trendEl) {
+    trendEl.className = 'kpi-trend ' + (stats.balance >= 0 ? 'up' : 'down');
+    trendEl.innerHTML = '<i class="fa-solid ' + (stats.balance >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down') + '"></i> ' + (stats.balance >= 0 ? 'Positivo' : 'Negativo');
+  }
+
+  // Category select
+  fillCategorySelect('txCategoria', user.id);
+
+  // Transactions list (last 5)
+  var txListEl = document.getElementById('txListDash');
+  if (txs.length === 0) {
+    txListEl.innerHTML = '<div style="padding:24px 0;text-align:center;color:var(--text-muted);"><i class="fa-solid fa-receipt" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i><p style="font-size:13px;">Aún no hay transacciones.<br>¡Agrega la primera!</p></div>';
+  } else {
+    txListEl.innerHTML = txs.slice(0, 5).map(function (tx) { return txItemHTML(tx, cats, false); }).join('');
+  }
+
+  // Goals (dashboard mini view)
+  var goalsEl = document.getElementById('goalsListDash');
+  var colors  = ['', 'green', 'purple'];
+  if (goals.length === 0) {
+    goalsEl.innerHTML = '<div style="padding:24px 0;text-align:center;color:var(--text-muted);"><i class="fa-solid fa-bullseye" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:8px;"></i><p style="font-size:13px;">Sin metas aún. ¡Define la primera!</p></div>';
+  } else {
+    goalsEl.innerHTML = goals.map(function (g, i) {
+      var pct = g.monto_objetivo > 0 ? Math.min(100, Math.round((g.monto_actual / g.monto_objetivo) * 100)) : 0;
+      var col = colors[i % 3];
+      return '<div class="goal-item"><div class="goal-top"><div class="goal-info"><div class="goal-ico"><i class="fa-solid ' + (g.icono || 'fa-bullseye') + '"></i></div><div><p class="goal-name">' + esc(g.nombre) + '</p><p class="goal-amount">' + formatCOP(g.monto_actual) + ' / ' + formatCOP(g.monto_objetivo) + '</p></div></div><span class="goal-pct">' + pct + '%</span></div><div class="progress-track"><div class="progress-fill ' + col + '" style="width:' + pct + '%"></div></div></div>';
+    }).join('');
+  }
+
+  // Chart
+  var gastosCat = FINPY.getGastosPorCat(user.id);
+  var chartWrap = document.getElementById('chartWrap');
+  if (Object.keys(gastosCat).length === 0) {
+    if (dashChart) { dashChart.destroy(); dashChart = null; }
+    chartWrap.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-muted);"><i class="fa-solid fa-chart-pie" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i><p style="font-size:13px;">Sin gastos registrados aún</p></div>';
+  } else {
+    chartWrap.innerHTML = '<div class="chart-container"><canvas id="chartGastos"></canvas></div>';
+    if (dashChart) dashChart.destroy();
+    var labels = Object.keys(gastosCat);
+    var datos  = Object.values(gastosCat);
+    var colorMap = { 'Comida':'#07C7B7','Transporte':'#2C3E50','Educación':'#7C6CF6','Ocio':'#22c55e','Viajes':'#f59e0b','Salud':'#ef4444' };
+    var palette  = ['#07C7B7','#2C3E50','#7C6CF6','#22c55e','#f59e0b','#ef4444','#A99DF8','#4ade80'];
+    var colors2  = labels.map(function (l, i) { return colorMap[l] || palette[i % palette.length]; });
+    dashChart = new Chart(document.getElementById('chartGastos').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: datos, backgroundColor: colors2, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 10 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, family: 'Inter' }, boxWidth: 10, boxHeight: 10 } },
+          tooltip: { callbacks: { label: function (ctx) { return ' $' + ctx.parsed.toLocaleString('es-CO'); } } }
+        }
+      }
+    });
+  }
+}
+
+window.renderPage = renderPage;
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderPage();
+
+  // Capi tips
+  var TIPS = [
+    "Regla 50/30/20: destina el 50% de tus ingresos a necesidades, 30% a gustos y 20% a ahorro. 📊",
+    "Antes de comprar algo, espera 24 horas. Así evitas el gasto impulsivo. ⏳",
+    "Construye un fondo de emergencia con al menos 3 meses de gastos fijos. 🛡️",
+    "Anota cada gasto, por pequeño que sea. Un café diario puede ser más de $60.000 al mes. ☕",
+    "Automatiza tu ahorro: mueve un porcentaje fijo apenas recibas ingresos. Lo que no ves, no lo gastas. 🏦",
+    "Revisa tus suscripciones cada mes. Las olvidadas pueden sumar una cantidad sorprendente. 📱",
+    "Distingue entre necesidad y deseo. Prioriza siempre las necesidades. 🧠",
+    "Paga primero las deudas de mayor interés. Las tarjetas de crédito son las más costosas. 💳",
+    "Define metas de ahorro específicas: un viaje, una laptop, un fondo. Tener un objetivo te motiva. 🎯",
+    "El mejor momento para empezar a ahorrar fue ayer. El segundo mejor es hoy. 💡",
+    "Cocinar en casa puede reducir tu gasto en comida hasta un 60%. 🍳",
+    "Guarda el 1% de todo lo que ganas. El hábito es lo que importa. 🌱",
+  ];
+  var idx = Math.floor(Math.random() * TIPS.length);
+  var textoEl = document.getElementById('capiTexto');
+  var bubble  = document.getElementById('capiBubble');
+  var btnOtro = document.getElementById('btnOtroConsejo');
+  function mostrarTip() {
+    if (!textoEl || !bubble) return;
+    bubble.style.opacity = '0';
+    setTimeout(function () { textoEl.textContent = TIPS[idx % TIPS.length]; bubble.style.opacity = '1'; }, 200);
+  }
+  mostrarTip();
+  if (btnOtro) {
+    btnOtro.addEventListener('click', function () { idx = (idx + 1) % TIPS.length; mostrarTip(); });
+    btnOtro.addEventListener('mouseenter', function () { btnOtro.style.borderColor = 'var(--primary)'; btnOtro.style.color = 'var(--primary)'; });
+    btnOtro.addEventListener('mouseleave', function () { btnOtro.style.borderColor = 'var(--border)'; btnOtro.style.color = 'var(--text-muted)'; });
+  }
+});
+
+} // fin verificación auth
+</script>
+</body>
+</html>

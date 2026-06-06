@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas — Finpy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<script>
+  var MONTHLY_DATA   = {{ monthly | tojson }};
+  var GASTOS_POR_CAT = {{ gastos_por_cat | tojson }};
+</script>
+<div class="app-layout">
+  {% include '_sidebar.html' %}
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Estadísticas</h1>
+        <p id="fechaHoy"></p>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon teal"><i class="fa-solid fa-wallet"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Balance total</p>
+            <p class="kpi-value">{{ balance | cop }}</p>
+            <p class="kpi-trend {{ 'up' if balance >= 0 else 'down' }}">
+              <i class="fa-solid {{ 'fa-arrow-trend-up' if balance >= 0 else 'fa-arrow-trend-down' }}"></i>
+              {{ 'Positivo' if balance >= 0 else 'Negativo' }}
+            </p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="fa-solid fa-circle-arrow-up"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total ingresos</p>
+            <p class="kpi-value">{{ total_ingresos | cop }}</p>
+            <p class="kpi-trend up"><i class="fa-solid fa-arrow-trend-up"></i> Acumulado</p>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="fa-solid fa-circle-arrow-down"></i></div>
+          <div class="kpi-info">
+            <p class="kpi-label">Total gastos</p>
+            <p class="kpi-value">{{ total_gastos | cop }}</p>
+            <p class="kpi-trend up"><i class="fa-solid fa-check"></i> Acumulado</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Gráfica de barras mensual -->
+        <div class="card">
+          <div class="card-header"><h3>Ingresos vs Gastos por mes</h3></div>
+          <div class="card-body">
+            {% if monthly %}
+            <div class="chart-container">
+              <canvas id="chartMensual"></canvas>
+            </div>
+            {% else %}
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-muted);">
+              <i class="fa-solid fa-chart-bar" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i>
+              <p style="font-size:13px;">Sin datos suficientes aún</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Dona por categoría -->
+        <div class="card">
+          <div class="card-header"><h3>Gastos por categoría</h3></div>
+          <div class="card-body">
+            {% if gastos_por_cat %}
+            <div class="chart-container">
+              <canvas id="chartCategorias"></canvas>
+            </div>
+            {% else %}
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-muted);">
+              <i class="fa-solid fa-chart-pie" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i>
+              <p style="font-size:13px;">Sin gastos registrados aún</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle por categoría -->
+      {% if gastos_por_cat %}
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header"><h3>Detalle por categoría</h3></div>
+        <div class="card-body">
+          {% for cat, monto in gastos_por_cat | dictsort(by='value', reverse=True) %}
+          <div class="tx-item" style="padding:12px 0;">
+            <div class="tx-info">
+              <p class="tx-name">{{ cat }}</p>
+            </div>
+            <div class="tx-right">
+              <p class="tx-amount expense">{{ monto | cop }}</p>
+              {% if total_gastos > 0 %}
+              <p class="tx-date">{{ ((monto / total_gastos) * 100) | round(1) }}%</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var palette = ['#07C7B7','#2C3E50','#7C6CF6','#22c55e','#f59e0b','#ef4444','#A99DF8','#4ade80'];
+
+  var barCanvas = document.getElementById('chartMensual');
+  if (barCanvas && typeof MONTHLY_DATA !== 'undefined') {
+    var meses    = Object.keys(MONTHLY_DATA);
+    var ingresos = meses.map(function(m) { return MONTHLY_DATA[m].ingresos; });
+    var gastos   = meses.map(function(m) { return MONTHLY_DATA[m].gastos; });
+    var nombres  = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var labels   = meses.map(function(m) {
+      var p = m.split('-');
+      return nombres[parseInt(p[1])] + ' ' + p[0].slice(2);
+    });
+    new Chart(barCanvas.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Ingresos', data: ingresos, backgroundColor: '#22c55e', borderRadius: 6 },
+          { label: 'Gastos',   data: gastos,   backgroundColor: '#ef4444', borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11, family: 'Inter' } } },
+          tooltip: { callbacks: { label: function(ctx) { return ' $' + ctx.parsed.y.toLocaleString('es-CO'); } } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return '$' + v.toLocaleString('es-CO'); } } } }
+      }
+    });
+  }
+
+  var donutCanvas = document.getElementById('chartCategorias');
+  if (donutCanvas && typeof GASTOS_POR_CAT !== 'undefined') {
+    var labels2 = Object.keys(GASTOS_POR_CAT);
+    var datos2  = Object.values(GASTOS_POR_CAT);
+    var colors2 = labels2.map(function(_, i) { return palette[i % palette.length]; });
+    new Chart(donutCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: labels2,
+        datasets: [{ data: datos2, backgroundColor: colors2, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 10 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, family: 'Inter' }, boxWidth: 10, boxHeight: 10 } },
+          tooltip: { callbacks: { label: function(ctx) { return ' $' + ctx.parsed.toLocaleString('es-CO'); } } }
+        }
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>

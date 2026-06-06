@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finpy — Configura tu experiencia</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="cuestionario-page">
+
+  <header>
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="{{ url_for('static', filename='img/Finpy Blanco2.png') }}" alt="Finpy">
+      </div>
+    </nav>
+  </header>
+
+  <div class="cuestionario-wrapper">
+    <div class="cuestionario-card">
+
+      <!-- Barra de progreso -->
+      <div class="quiz-progress">
+        <div class="quiz-step active"></div>
+        <div class="quiz-step"></div>
+        <div class="quiz-step"></div>
+      </div>
+
+      <p class="step-label">Paso 1 de 3 — Configuración inicial</p>
+      <h2>Personaliza tu Finpy</h2>
+      <p class="subtitle">Cuéntanos sobre tus finanzas para que Capi pueda darte mejores consejos.</p>
+
+      <form id="cuestionarioForm" action="/cuestionario" method="POST">
+
+        <!-- Ingresos -->
+        <label class="field-label">Ingresos mensuales aproximados</label>
+        <div class="form-group">
+          <i class="fa-solid fa-circle-arrow-up" style="color:var(--success);"></i>
+          <input type="number" name="ingreso_mensual" placeholder="Ej: 1200000" min="0" required>
+        </div>
+
+        <!-- Gastos -->
+        <label class="field-label">Gastos mensuales aproximados</label>
+        <div class="form-group">
+          <i class="fa-solid fa-circle-arrow-down" style="color:var(--danger);"></i>
+          <input type="number" name="gasto_mensual" placeholder="Ej: 800000" min="0" required>
+        </div>
+
+        <!-- Categorías -->
+        <label class="field-label">¿En qué categorías sueles gastar más?
+          <span style="font-weight:400; color:var(--text-muted);"> (elige las que apliquen)</span>
+        </label>
+        <div class="cat-chips" style="margin-bottom:18px;">
+          <label class="cat-chip teal quiz-cat">
+            <input type="checkbox" style="display:none;">
+            <i class="fa-solid fa-utensils"></i> Comida
+          </label>
+          <label class="cat-chip blue quiz-cat">
+            <input type="checkbox" style="display:none;">
+            <i class="fa-solid fa-bus"></i> Transporte
+          </label>
+          <label class="cat-chip purple quiz-cat">
+            <input type="checkbox" style="display:none;">
+            <i class="fa-solid fa-book"></i> Educación
+          </label>
+          <label class="cat-chip green quiz-cat">
+            <input type="checkbox" style="display:none;">
+            <i class="fa-solid fa-gamepad"></i> Ocio
+          </label>
+          <label class="cat-chip white quiz-cat">
+            <input type="checkbox" style="display:none;">
+            <i class="fa-solid fa-plane"></i> Viajes
+          </label>
+        </div>
+
+        <!-- Alertas -->
+        <label class="field-label">¿Deseas recibir alertas de gastos excesivos?</label>
+        <div class="form-group">
+          <i class="fa-solid fa-bell"></i>
+          <select name="alertas" id="alertasSelect">
+            <option value="">Selecciona una opción</option>
+            <option value="si">Sí, quiero alertas</option>
+            <option value="no">No, por ahora no</option>
+          </select>
+        </div>
+
+        <!-- Config alertas (condicional) -->
+        <div class="config-alertas" id="configAlertas">
+
+          <div class="config-alertas-title">
+            <i class="fa-solid fa-sliders"></i>
+            Configurar alertas
+          </div>
+
+          <label class="field-label">¿Con qué frecuencia?</label>
+          <div class="form-group">
+            <i class="fa-solid fa-clock"></i>
+            <select name="frecuencia_alertas" id="frecuenciaAlertas">
+              <option value="">Selecciona frecuencia</option>
+              <option value="diaria">Diaria</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual">Mensual</option>
+              <option value="todas">Todas</option>
+            </select>
+          </div>
+
+          <div id="limiteDiarioBox" style="display:none;">
+            <label class="field-label">Límite diario (COP)</label>
+            <div class="form-group">
+              <i class="fa-solid fa-sun"></i>
+              <input type="number" name="limite_diario" placeholder="Ej: 30000" min="0">
+            </div>
+          </div>
+
+          <div id="limiteSemanalBox" style="display:none;">
+            <label class="field-label">Límite semanal (COP)</label>
+            <div class="form-group">
+              <i class="fa-solid fa-calendar-week"></i>
+              <input type="number" name="limite_semanal" placeholder="Ej: 150000" min="0">
+            </div>
+          </div>
+
+          <div id="limiteMensualBox" style="display:none;">
+            <label class="field-label">Límite mensual (COP)</label>
+            <div class="form-group">
+              <i class="fa-solid fa-calendar"></i>
+              <input type="number" name="limite_mensual" placeholder="Ej: 600000" min="0">
+            </div>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <i class="fa-solid fa-rocket"></i>
+          Ir a mi dashboard
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

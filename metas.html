@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metas — Finpy</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .metas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .meta-card { background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:14px; }
+    .meta-card-header { display:flex; align-items:flex-start; justify-content:space-between; }
+    .meta-card-info { display:flex; align-items:center; gap:12px; }
+    .meta-top-right { display:flex; align-items:center; gap:8px; }
+    .btn-del-meta { background:none; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; padding:5px 8px; border-radius:8px; font-size:12px; transition:all .2s; }
+    .btn-del-meta:hover { border-color:#ef4444; color:#ef4444; background:#fee2e2; }
+    .update-input { display:flex; gap:8px; }
+    .update-input input { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--bg); color:var(--text); font-family:inherit; }
+    .update-input input:focus { outline:none; border-color:var(--primary); }
+    .update-input button { padding:7px 14px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-family:inherit; white-space:nowrap; }
+    .update-input button:hover { opacity:.88; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="static/img/Finpy Blanco2.png" alt="Finpy"></div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="dashboard.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="transacciones.html"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones</a>
+      <a href="estadisticas.html"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+      <a href="metas.html" class="active"><i class="fa-solid fa-bullseye"></i> Metas</a>
+      <span class="nav-section-label">Cuenta</span>
+      <a href="categorias.html"><i class="fa-solid fa-tags"></i> Categorías</a>
+      <a href="alertas.html"><i class="fa-solid fa-bell"></i> Alertas</a>
+      <a href="#" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar sidebar-user-avatar">?</div>
+        <div class="user-info"><span class="user-name sidebar-user-name">—</span><span class="user-role">Plan gratuito</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting"><h1>Metas de ahorro</h1><p id="fechaHoy"></p></div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <div class="content-area">
+      <div class="metas-grid" id="metasGrid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva meta de ahorro</h3><button class="btn-close" id="btnCerrarMeta"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="metaForm">
+      <div class="form-group"><i class="fa-solid fa-bullseye"></i><input type="text" id="metaNombre" placeholder="Nombre de la meta" required></div>
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="metaObjetivo" placeholder="Monto objetivo (COP)" required min="1"></div>
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="metaActual" placeholder="Monto ya ahorrado (opcional)" min="0"></div>
+      <div id="metaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear meta</button>
+    </form>
+  </div>
+</div>
+
+<script src="static/js/storage.js"></script>
+<script src="static/js/app.js"></script>
+<script>
+var GOAL_COLORS = ['', 'green', 'purple'];
+
+function renderPage() {
+  if (!FINPY.requireAuth()) return;
+  var user  = FINPY.getCurrentUser();
+  var goals = FINPY.getGoals(user.id);
+  var grid  = document.getElementById('metasGrid');
+
+  var html = goals.map(function (g, i) {
+    return goalItemHTML(g, GOAL_COLORS[i % 3], true);
+  }).join('');
+
+  // Add new goal card
+  html += '<div class="meta-card" id="btnNuevaMeta" style="cursor:pointer;border-style:dashed;justify-content:center;align-items:center;min-height:160px;gap:8px;">' +
+    '<i class="fa-solid fa-plus" style="font-size:1.8rem;color:var(--primary);opacity:.7;"></i>' +
+    '<p style="color:var(--primary);font-weight:600;font-size:14px;">Nueva meta</p></div>';
+
+  grid.innerHTML = html;
+
+  // Rebind btnNuevaMeta click (since it's recreated)
+  var btnMeta = document.getElementById('btnNuevaMeta');
+  if (btnMeta) {
+    btnMeta.addEventListener('click', function () {
+      var modalMeta = document.getElementById('modalMeta');
+      if (modalMeta) { modalMeta.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    });
+  }
+}
+
+window.renderPage = renderPage;
+
+window.updateGoal = function (id) {
+  var input = document.getElementById('upd-' + id);
+  var val   = parseFloat(input ? input.value : '');
+  if (isNaN(val) || val < 0) { alert('Ingresa un monto válido.'); return; }
+  FINPY.updateGoal(id, val);
+  showToast('Meta actualizada', 'success');
+  renderPage();
+};
+
+window.deleteGoal = function (id) {
+  if (!confirm('¿Eliminar esta meta?')) return;
+  FINPY.deleteGoal(id);
+  showToast('Meta eliminada', 'success');
+  renderPage();
+};
+
+document.addEventListener('DOMContentLoaded', renderPage);
+</script>
+</body>
+</html>

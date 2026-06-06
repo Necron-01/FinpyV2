@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transacciones — Finpy</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .filter-pill { padding:6px 18px; border-radius:20px; border:1.5px solid var(--border); background:none; color:var(--text-muted); font-size:13px; cursor:pointer; font-family:inherit; transition:all .2s; }
+    .filter-pill.active, .filter-pill:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; }
+    .tx-item-del { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:6px 8px; border-radius:8px; transition:all .2s; flex-shrink:0; }
+    .tx-item-del:hover { background:#fee2e2; color:#ef4444; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="static/img/Finpy Blanco2.png" alt="Finpy"></div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="dashboard.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="transacciones.html" class="active"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones</a>
+      <a href="estadisticas.html"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+      <a href="metas.html"><i class="fa-solid fa-bullseye"></i> Metas</a>
+      <span class="nav-section-label">Cuenta</span>
+      <a href="categorias.html"><i class="fa-solid fa-tags"></i> Categorías</a>
+      <a href="alertas.html"><i class="fa-solid fa-bell"></i> Alertas</a>
+      <a href="#" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar sidebar-user-avatar">?</div>
+        <div class="user-info"><span class="user-name sidebar-user-name">—</span><span class="user-role">Plan gratuito</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Transacciones</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-add" id="btnAgregar"><i class="fa-solid fa-plus"></i> Nueva transacción</button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="card-header">
+          <h3>Todas las transacciones (<span id="txCount">0</span>)</h3>
+          <div class="filter-bar">
+            <button class="filter-pill active" data-filtro="todos">Todos</button>
+            <button class="filter-pill" data-filtro="ingreso">Ingresos</button>
+            <button class="filter-pill" data-filtro="gasto">Gastos</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="transactions-list" id="txListFull">
+            <div style="padding:40px 0;text-align:center;color:var(--text-muted);">
+              <i class="fa-solid fa-receipt" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:12px;"></i>
+              <p style="font-size:14px;">No hay transacciones aún.<br>¡Agrega la primera!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TRANSACCIÓN -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva transacción</h3><button class="btn-close" id="btnCerrarModal"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="tipo-toggle">
+      <button class="tipo-btn expense selected" id="tipoGasto"><i class="fa-solid fa-circle-arrow-down"></i> Gasto</button>
+      <button class="tipo-btn income" id="tipoIngreso"><i class="fa-solid fa-circle-arrow-up"></i> Ingreso</button>
+    </div>
+    <form id="txForm">
+      <div class="form-group"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="txMonto" placeholder="Monto (COP)" required min="1" step="any"></div>
+      <div class="form-group"><i class="fa-solid fa-tag"></i><select id="txCategoria"><option value="">Sin categoría</option></select></div>
+      <div class="form-group"><i class="fa-solid fa-pen"></i><input type="text" id="txDescripcion" placeholder="Descripción (opcional)"></div>
+      <div class="form-group"><i class="fa-solid fa-calendar"></i><input type="date" id="txFecha" required></div>
+      <div id="txError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit" id="btnGuardarTx">Guardar transacción</button>
+    </form>
+  </div>
+</div>
+
+<script src="static/js/storage.js"></script>
+<script src="static/js/app.js"></script>
+<script>
+var currentFilter = 'todos';
+
+function renderPage() {
+  if (!FINPY.requireAuth()) return;
+  var user = FINPY.getCurrentUser();
+  var cats = FINPY.getCategories(user.id);
+  var txs  = FINPY.getTransactions(user.id);
+  var filtered = currentFilter === 'todos' ? txs : txs.filter(function (t) { return t.tipo === currentFilter; });
+
+  document.getElementById('txCount').textContent = filtered.length;
+  fillCategorySelect('txCategoria', user.id);
+
+  var listEl = document.getElementById('txListFull');
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--text-muted);"><i class="fa-solid fa-receipt" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:12px;"></i><p style="font-size:14px;">No hay transacciones' + (currentFilter !== 'todos' ? ' de este tipo' : ' aún') + '.</p></div>';
+  } else {
+    listEl.innerHTML = filtered.map(function (tx) { return txItemHTML(tx, cats, true); }).join('');
+  }
+}
+
+window.renderPage = renderPage;
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderPage();
+
+  document.querySelectorAll('.filter-pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      document.querySelectorAll('.filter-pill').forEach(function (p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      currentFilter = pill.dataset.filtro || 'todos';
+      renderPage();
+    });
+  });
+});
+</script>
+</body>
+</html>

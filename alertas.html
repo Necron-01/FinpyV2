@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alertas — Finpy</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .alertas-list { display:flex; flex-direction:column; gap:12px; }
+    .alerta-card { background:var(--bg); border:1.5px solid var(--border); border-radius:14px; padding:18px 20px; display:flex; align-items:center; gap:16px; }
+    .alerta-icon { width:44px; height:44px; border-radius:12px; background:#f59e0b20; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .alerta-body { flex:1; }
+    .alerta-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .freq-badge { display:inline-block; padding:2px 10px; border-radius:20px; background:var(--primary)20; color:var(--primary); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+    .btn-del-alerta { background:none; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; padding:7px 10px; border-radius:8px; transition:all .2s; flex-shrink:0; }
+    .btn-del-alerta:hover { border-color:#ef4444; color:#ef4444; background:#fee2e2; }
+    .limite-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .limite-tag { font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:3px 8px; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="static/img/Finpy Blanco2.png" alt="Finpy"></div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="dashboard.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="transacciones.html"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones</a>
+      <a href="estadisticas.html"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+      <a href="metas.html"><i class="fa-solid fa-bullseye"></i> Metas</a>
+      <span class="nav-section-label">Cuenta</span>
+      <a href="categorias.html"><i class="fa-solid fa-tags"></i> Categorías</a>
+      <a href="alertas.html" class="active"><i class="fa-solid fa-bell"></i> Alertas</a>
+      <a href="#" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar sidebar-user-avatar">?</div>
+        <div class="user-info"><span class="user-name sidebar-user-name">—</span><span class="user-role">Plan gratuito</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting"><h1>Alertas de presupuesto</h1><p id="fechaHoy"></p></div>
+      <div class="topbar-actions">
+        <button class="btn-add" id="btnNuevaAlerta"><i class="fa-solid fa-plus"></i> Nueva alerta</button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="card-header">
+          <h3>Alertas activas (<span id="alertasCount">0</span>)</h3>
+        </div>
+        <div class="card-body" id="alertasBody">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALERTA -->
+<div class="modal-overlay" id="modalAlerta">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva alerta de presupuesto</h3><button class="btn-close" id="btnCerrarAlerta"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="alertaForm">
+      <div class="form-group">
+        <i class="fa-solid fa-clock"></i>
+        <select id="alertaFrecuencia" required>
+          <option value="">Selecciona la frecuencia</option>
+          <option value="diaria">Diaria</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensual">Mensual</option>
+          <option value="todas">Todas</option>
+        </select>
+      </div>
+      <div class="form-group" id="limiteDiarioBox" style="display:none;"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="alertaDiario" placeholder="Límite diario (COP)" min="1"></div>
+      <div class="form-group" id="limiteSemanalBox" style="display:none;"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="alertaSemanal" placeholder="Límite semanal (COP)" min="1"></div>
+      <div class="form-group" id="limiteMensualBox" style="display:none;"><i class="fa-solid fa-dollar-sign"></i><input type="number" id="alertaMensual" placeholder="Límite mensual (COP)" min="1"></div>
+      <div id="alertaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear alerta</button>
+    </form>
+  </div>
+</div>
+
+<script src="static/js/storage.js"></script>
+<script src="static/js/app.js"></script>
+<script>
+function alertaCardHTML(a) {
+  var tags = '';
+  if (a.limite_diario)  tags += '<span class="limite-tag"><i class="fa-solid fa-sun"></i> Diario: ' + formatCOP(a.limite_diario) + '</span>';
+  if (a.limite_semanal) tags += '<span class="limite-tag"><i class="fa-solid fa-calendar-week"></i> Semanal: ' + formatCOP(a.limite_semanal) + '</span>';
+  if (a.limite_mensual) tags += '<span class="limite-tag"><i class="fa-solid fa-calendar"></i> Mensual: ' + formatCOP(a.limite_mensual) + '</span>';
+  return '<div class="alerta-card" id="alertcard-' + a.id + '">' +
+    '<div class="alerta-icon"><i class="fa-solid fa-bell"></i></div>' +
+    '<div class="alerta-body"><span class="freq-badge">' + esc(a.frecuencia) + '</span><p class="alerta-title">Alerta ' + esc(a.frecuencia) + '</p><div class="limite-row">' + tags + '</div></div>' +
+    '<button class="btn-del-alerta" onclick="window.deleteAlert(\'' + a.id + '\')" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>' +
+    '</div>';
+}
+
+function renderPage() {
+  if (!FINPY.requireAuth()) return;
+  var user    = FINPY.getCurrentUser();
+  var alertas = FINPY.getAlerts(user.id);
+
+  document.getElementById('alertasCount').textContent = alertas.length;
+
+  var body = document.getElementById('alertasBody');
+  if (alertas.length === 0) {
+    body.innerHTML =
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text-muted);text-align:center;">' +
+      '<i class="fa-solid fa-bell-slash" style="font-size:3rem;opacity:.25;margin-bottom:16px;display:block;"></i>' +
+      '<p style="font-size:14px;margin-bottom:16px;">No tienes alertas configuradas.<br>Crea una para controlar mejor tus gastos.</p>' +
+      '<button class="btn-add" id="btnNuevaAlerta2"><i class="fa-solid fa-plus"></i> Crear alerta</button></div>';
+    var btn2 = document.getElementById('btnNuevaAlerta2');
+    if (btn2) btn2.addEventListener('click', function () {
+      var m = document.getElementById('modalAlerta');
+      if (m) m.classList.add('open');
+    });
+  } else {
+    body.innerHTML = '<div class="alertas-list">' + alertas.map(alertaCardHTML).join('') + '</div>';
+  }
+}
+
+window.renderPage = renderPage;
+
+window.deleteAlert = function (id) {
+  if (!confirm('¿Eliminar esta alerta?')) return;
+  FINPY.deleteAlert(id);
+  showToast('Alerta eliminada', 'success');
+  renderPage();
+};
+
+document.addEventListener('DOMContentLoaded', renderPage);
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metas — Finpy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .metas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .meta-card { background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:14px; }
+    .meta-card-header { display:flex; align-items:flex-start; justify-content:space-between; }
+    .meta-card-info { display:flex; align-items:center; gap:12px; }
+    .meta-top-right { display:flex; align-items:center; gap:8px; }
+    .btn-del-meta { background:none; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; padding:5px 8px; border-radius:8px; font-size:12px; transition:all .2s; }
+    .btn-del-meta:hover { border-color:#ef4444; color:#ef4444; background:#fee2e2; }
+    .update-input { display:flex; gap:8px; }
+    .update-input input { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--bg); color:var(--text); font-family:inherit; }
+    .update-input input:focus { outline:none; border-color:var(--primary); }
+    .update-input button { padding:7px 14px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-family:inherit; white-space:nowrap; }
+    .update-input button:hover { opacity:.88; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include '_sidebar.html' %}
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting">
+        <h1>Metas de ahorro</h1>
+        <p id="fechaHoy"></p>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <div class="content-area">
+      {% if metas %}
+      <div class="metas-grid">
+        {% set colores = ['', 'green', 'purple'] %}
+        {% for meta in metas %}
+        {% set pct = ((meta.monto_actual / meta.monto_objetivo) * 100) | round | int if meta.monto_objetivo > 0 else 0 %}
+        {% set color_class = colores[loop.index0 % 3] %}
+        <div class="meta-card" id="meta-{{ meta.id }}">
+          <div class="meta-card-header">
+            <div class="meta-card-info">
+              <div class="goal-ico"><i class="fa-solid {{ meta.icono }}"></i></div>
+              <div>
+                <p class="goal-name">{{ meta.nombre }}</p>
+                <p class="goal-amount">{{ meta.monto_actual | cop }} / {{ meta.monto_objetivo | cop }}</p>
+              </div>
+            </div>
+            <div class="meta-top-right">
+              <span class="goal-pct">{{ pct }}%</span>
+              <button class="btn-del-meta" onclick="eliminarMeta('{{ meta.id }}')" title="Eliminar">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill {{ color_class }}" style="width:{{ [pct, 100] | min }}%"></div>
+          </div>
+          <div class="update-input">
+            <input type="number" placeholder="Nuevo monto ahorrado" min="0" id="upd-{{ meta.id }}">
+            <button onclick="actualizarMeta('{{ meta.id }}')">Actualizar</button>
+          </div>
+        </div>
+        {% endfor %}
+        <!-- Tarjeta para agregar nueva meta -->
+        <div class="meta-card" id="btnNuevaMeta" style="cursor:pointer;border-style:dashed;justify-content:center;align-items:center;min-height:160px;gap:8px;">
+          <i class="fa-solid fa-plus" style="font-size:1.8rem;color:var(--primary);opacity:.7;"></i>
+          <p style="color:var(--primary);font-weight:600;font-size:14px;">Nueva meta</p>
+        </div>
+      </div>
+      {% else %}
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--text-muted);text-align:center;">
+        <i class="fa-solid fa-bullseye" style="font-size:3rem;opacity:.25;margin-bottom:16px;display:block;"></i>
+        <p style="font-size:15px;margin-bottom:16px;">Sin metas aún. ¡Define tu primera meta de ahorro!</p>
+        <button class="btn-add" id="btnNuevaMeta"><i class="fa-solid fa-plus"></i> Crear meta</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA META -->
+<div class="modal-overlay" id="modalMeta">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nueva meta de ahorro</h3>
+      <button class="btn-close" id="btnCerrarMeta"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="metaForm">
+      <div class="form-group">
+        <i class="fa-solid fa-bullseye"></i>
+        <input type="text" id="metaNombre" placeholder="Nombre de la meta" required>
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="metaObjetivo" placeholder="Monto objetivo (COP)" required min="1">
+      </div>
+      <div class="form-group">
+        <i class="fa-solid fa-dollar-sign"></i>
+        <input type="number" id="metaActual" placeholder="Monto ya ahorrado (opcional)" min="0">
+      </div>
+      <div id="metaError" class="form-error" style="display:none;"></div>
+      <button type="submit" class="btn-submit">Crear meta</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+function showToast(msg, type) {
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + (type || 'success');
+  t.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 3000);
+}
+
+function eliminarMeta(id) {
+  if (!confirm('¿Eliminar esta meta?')) return;
+  fetch('/api/metas/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { document.getElementById('meta-' + id).remove(); showToast('Meta eliminada', 'success'); }
+    });
+}
+
+function actualizarMeta(id) {
+  var input = document.getElementById('upd-' + id);
+  var val = parseFloat(input.value);
+  if (isNaN(val) || val < 0) { alert('Ingresa un monto válido'); return; }
+  fetch('/api/metas/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ monto_actual: val })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) { showToast('Meta actualizada', 'success'); setTimeout(function() { location.reload(); }, 1200); }
+    else { alert(d.error || 'Error al actualizar'); }
+  });
+}
+</script>
+</body>
+</html>

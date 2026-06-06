@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas — Finpy</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="static/img/Finpy Blanco2.png" alt="Finpy"></div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-label">Principal</span>
+      <a href="dashboard.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="transacciones.html"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transacciones</a>
+      <a href="estadisticas.html" class="active"><i class="fa-solid fa-chart-line"></i> Estadísticas</a>
+      <a href="metas.html"><i class="fa-solid fa-bullseye"></i> Metas</a>
+      <span class="nav-section-label">Cuenta</span>
+      <a href="categorias.html"><i class="fa-solid fa-tags"></i> Categorías</a>
+      <a href="alertas.html"><i class="fa-solid fa-bell"></i> Alertas</a>
+      <a href="#" id="logoutLink"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="user-avatar sidebar-user-avatar">?</div>
+        <div class="user-info"><span class="user-name sidebar-user-name">—</span><span class="user-role">Plan gratuito</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-greeting"><h1>Estadísticas</h1><p id="fechaHoy"></p></div>
+    </header>
+
+    <div class="content-area">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon teal"><i class="fa-solid fa-wallet"></i></div>
+          <div class="kpi-info"><p class="kpi-label">Balance total</p><p class="kpi-value" id="kpiBalance">$0</p><p class="kpi-trend up" id="kpiBalanceTrend"><i class="fa-solid fa-arrow-trend-up"></i> Positivo</p></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="fa-solid fa-circle-arrow-up"></i></div>
+          <div class="kpi-info"><p class="kpi-label">Total ingresos</p><p class="kpi-value" id="kpiIngresos">$0</p><p class="kpi-trend up"><i class="fa-solid fa-arrow-trend-up"></i> Acumulado</p></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="fa-solid fa-circle-arrow-down"></i></div>
+          <div class="kpi-info"><p class="kpi-label">Total gastos</p><p class="kpi-value" id="kpiGastos">$0</p><p class="kpi-trend up"><i class="fa-solid fa-check"></i> Acumulado</p></div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header"><h3>Ingresos vs Gastos por mes</h3></div>
+          <div class="card-body"><div id="barChartWrap" style="min-height:220px;display:flex;align-items:center;justify-content:center;"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Gastos por categoría</h3></div>
+          <div class="card-body"><div id="donutChartWrap" style="min-height:220px;display:flex;align-items:center;justify-content:center;"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;" id="catDetailCard">
+        <div class="card-header"><h3>Detalle por categoría</h3></div>
+        <div class="card-body" id="catDetailList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="static/js/storage.js"></script>
+<script src="static/js/app.js"></script>
+<script>
+var barChart   = null;
+var donutChart = null;
+var palette    = ['#07C7B7','#2C3E50','#7C6CF6','#22c55e','#f59e0b','#ef4444','#A99DF8','#4ade80'];
+
+function renderPage() {
+  if (!FINPY.requireAuth()) return;
+  var user  = FINPY.getCurrentUser();
+  var stats = FINPY.calcStats(user.id);
+
+  // KPIs
+  document.getElementById('kpiBalance').textContent  = formatCOP(stats.balance);
+  document.getElementById('kpiIngresos').textContent = formatCOP(stats.total_ingresos);
+  document.getElementById('kpiGastos').textContent   = formatCOP(stats.total_gastos);
+  var trendEl = document.getElementById('kpiBalanceTrend');
+  trendEl.className = 'kpi-trend ' + (stats.balance >= 0 ? 'up' : 'down');
+  trendEl.innerHTML = '<i class="fa-solid ' + (stats.balance >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down') + '"></i> ' + (stats.balance >= 0 ? 'Positivo' : 'Negativo');
+
+  var emptyHTML = '<div style="display:flex;flex-direction:column;align-items:center;color:var(--text-muted);"><i class="fa-solid fa-chart-bar" style="font-size:2.5rem;margin-bottom:12px;opacity:0.3;"></i><p style="font-size:13px;">Sin datos suficientes aún</p></div>';
+
+  // Bar chart (monthly)
+  var monthly   = FINPY.getMonthlyData(user.id);
+  var mesesKeys = Object.keys(monthly);
+  var barWrap   = document.getElementById('barChartWrap');
+  if (mesesKeys.length === 0) {
+    if (barChart) { barChart.destroy(); barChart = null; }
+    barWrap.innerHTML = emptyHTML;
+  } else {
+    barWrap.innerHTML = '<div class="chart-container" style="width:100%;"><canvas id="chartMensual"></canvas></div>';
+    if (barChart) barChart.destroy();
+    var nombres = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var labels  = mesesKeys.map(function (m) { var p = m.split('-'); return nombres[parseInt(p[1])] + ' ' + p[0].slice(2); });
+    barChart = new Chart(document.getElementById('chartMensual').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Ingresos', data: mesesKeys.map(function (m) { return monthly[m].ingresos; }), backgroundColor: '#22c55e', borderRadius: 6 },
+          { label: 'Gastos',   data: mesesKeys.map(function (m) { return monthly[m].gastos; }),   backgroundColor: '#ef4444', borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11, family: 'Inter' } } },
+          tooltip: { callbacks: { label: function (ctx) { return ' $' + ctx.parsed.y.toLocaleString('es-CO'); } } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '$' + v.toLocaleString('es-CO'); } } } }
+      }
+    });
+  }
+
+  // Donut chart (by category)
+  var gastosCat  = FINPY.getGastosPorCat(user.id);
+  var catKeys    = Object.keys(gastosCat);
+  var donutWrap  = document.getElementById('donutChartWrap');
+  if (catKeys.length === 0) {
+    if (donutChart) { donutChart.destroy(); donutChart = null; }
+    donutWrap.innerHTML = emptyHTML.replace('fa-chart-bar', 'fa-chart-pie');
+  } else {
+    donutWrap.innerHTML = '<div class="chart-container" style="width:100%;"><canvas id="chartCategorias"></canvas></div>';
+    if (donutChart) donutChart.destroy();
+    var colors = catKeys.map(function (_, i) { return palette[i % palette.length]; });
+    donutChart = new Chart(document.getElementById('chartCategorias').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: catKeys, datasets: [{ data: Object.values(gastosCat), backgroundColor: colors, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 10 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, family: 'Inter' }, boxWidth: 10, boxHeight: 10 } },
+          tooltip: { callbacks: { label: function (ctx) { return ' $' + ctx.parsed.toLocaleString('es-CO'); } } }
+        }
+      }
+    });
+  }
+
+  // Category detail
+  var detailEl = document.getElementById('catDetailList');
+  var catCard  = document.getElementById('catDetailCard');
+  if (catKeys.length === 0) {
+    catCard.style.display = 'none';
+  } else {
+    catCard.style.display = '';
+    var totalGas = stats.total_gastos || 1;
+    detailEl.innerHTML = catKeys
+      .sort(function (a, b) { return gastosCat[b] - gastosCat[a]; })
+      .map(function (cat) {
+        var pct = ((gastosCat[cat] / totalGas) * 100).toFixed(1);
+        return '<div class="tx-item" style="padding:12px 0;"><div class="tx-info"><p class="tx-name">' + esc(cat) + '</p></div><div class="tx-right"><p class="tx-amount expense">' + formatCOP(gastosCat[cat]) + '</p><p class="tx-date">' + pct + '%</p></div></div>';
+      }).join('');
+  }
+}
+
+window.renderPage = renderPage;
+document.addEventListener('DOMContentLoaded', renderPage);
+</script>
+</body>
+</html>
