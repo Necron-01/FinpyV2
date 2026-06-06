@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contáctanos | Finpy</title>
+
+<link rel="stylesheet" href="static/css/styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+body{
+    background:#f4f7fb;
+    font-family:Inter,sans-serif;
+    margin:0;
+}
+
+.contact-container{
+    max-width:700px;
+    margin:50px auto;
+    padding:20px;
+}
+
+.contact-card{
+    background:#fff;
+    border-radius:20px;
+    padding:35px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.contact-title{
+    text-align:center;
+    margin-bottom:10px;
+    color:#2C3E50;
+}
+
+.contact-subtitle{
+    text-align:center;
+    color:#6b7280;
+    margin-bottom:30px;
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+.form-group label{
+    display:block;
+    margin-bottom:6px;
+    font-weight:600;
+}
+
+.form-group input,
+.form-group textarea{
+    width:100%;
+    padding:14px;
+    border:1px solid #dfe4ea;
+    border-radius:12px;
+    font-size:15px;
+    box-sizing:border-box;
+}
+
+.form-group textarea{
+    min-height:140px;
+    resize:vertical;
+}
+
+.btn-submit{
+    width:100%;
+    background:#07C7B7;
+    color:white;
+    border:none;
+    padding:15px;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.btn-submit:hover{
+    background:#05a99b;
+}
+
+.btn-back{
+    width:100%;
+    margin-top:12px;
+    background:#fff;
+    border:2px solid #07C7B7;
+    color:#07C7B7;
+    padding:15px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<div class="contact-container">
+
+    <div class="contact-card">
+
+        <h1 class="contact-title">
+            <i class="fa-solid fa-envelope"></i>
+            Contáctanos
+        </h1>
+
+        <p class="contact-subtitle">
+            Cuéntanos qué problema tienes y te ayudaremos.
+        </p>
+
+        <form id="contactForm">
+
+            <div class="form-group">
+                <label>Correo electrónico</label>
+                <input
+                    type="email"
+                    id="correo"
+                    placeholder="ejemplo@correo.com"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>¿Cuál es el problema?</label>
+                <textarea
+                    id="problema"
+                    placeholder="Describe tu problema..."
+                    required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-paper-plane"></i>
+                Enviar mensaje
+            </button>
+
+        </form>
+
+        <button
+            class="btn-back"
+            onclick="window.location.href='dashboard.html'">
+            Volver al Dashboard
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e){
+
+    e.preventDefault();
+
+    const correo = document.getElementById('correo').value.trim();
+    const problema = document.getElementById('problema').value.trim();
+
+    if(!correo || !problema){
+        alert('Completa todos los campos.');
+        return;
+    }
+
+    alert(
+        'Tu mensaje ha sido enviado correctamente.' +
+        'Gracias por contactar con Finpy.'
+    );
+
+    window.location.href = 'dashboard.html';
+});
+</script>
+
+</body>
+</html>
