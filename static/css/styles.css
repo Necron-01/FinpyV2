@@ -84,7 +84,7 @@ input, select, textarea { font-family: var(--font); }
   box-shadow: 0 2px 20px rgba(0,0,0,0.15);
 }
 
-.navbar-logo img { height: 120px; width: auto; }
+.navbar-logo img { height: 100px; width: auto; }
 
 .nav-links {
   display: flex;
